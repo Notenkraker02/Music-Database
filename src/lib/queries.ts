@@ -157,13 +157,14 @@ export async function fetchDistinctValues(column: "genre" | "format" | "country"
     .not(column, "eq", "");
 
   if (!data) return [];
-  const unique = data
-  .map((r) => r[column] as string)
-  .filter(Boolean)
-  .filter((value, index, array) => array.indexOf(value) === index)
-  .sort();
-
-return unique;
+  
+  const unique = (data as Record<string, any>[])
+    .map((r) => r[column] as string)
+    .filter(Boolean)
+    .filter((value, index, array) => array.indexOf(value) === index)
+    .sort();
+    
+  return unique;
 }
 
 // ── Top 1000 ───────────────────────────────────────────────
