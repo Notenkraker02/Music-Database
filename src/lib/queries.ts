@@ -146,7 +146,7 @@ export async function fetchTotalPlaytime(): Promise<number> {
   }
   return total;
 }
-
+ 
 // ── Genres / Formats / Decades ─────────────────────────────
 
 export async function fetchDistinctValues(column: "genre" | "format" | "country") {
