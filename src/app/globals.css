@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-ink-950 text-ink-100 font-sans antialiased;
+  }
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-ink-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-500;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-ink-900 border border-ink-800 rounded-xl overflow-hidden transition-all duration-200;
+  }
+  .card-hover {
+    @apply card hover:border-ink-600 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5;
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-groove text-white font-medium rounded-lg
+           hover:bg-groove-light transition-colors focus:outline-none focus:ring-2 focus:ring-groove/50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-ink-800 text-ink-200 font-medium rounded-lg
+           border border-ink-700 hover:bg-ink-700 hover:text-white transition-colors
+           focus:outline-none focus:ring-2 focus:ring-ink-500/50;
+  }
+  .input-field {
+    @apply w-full px-3 py-2.5 bg-ink-900 border border-ink-700 rounded-lg text-ink-100
+           placeholder:text-ink-500 focus:outline-none focus:border-groove focus:ring-1 focus:ring-groove/30
+           transition-colors;
+  }
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .stat-value {
+    @apply text-2xl md:text-3xl font-display font-bold text-white;
+  }
+  .stat-label {
+    @apply text-sm text-ink-400 mt-1;
+  }
+  .page-title {
+    @apply text-3xl md:text-4xl font-display font-bold text-white;
+  }
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, theme('colors.ink.800') 25%, theme('colors.ink.700') 50%, theme('colors.ink.800') 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
