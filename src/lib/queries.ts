@@ -136,9 +136,12 @@ export async function fetchTotalPlaytime(): Promise<number> {
   if (!data) return 0;
   let total = 0;
   for (const row of data) {
-    const matches = (row.tracklist as string).matchAll(/\((\d+):(\d{2})\)/g);
-    for (const m of matches) {
-      total += parseInt(m[1]) * 60 + parseInt(m[2]);
+    const regex = /\((\d+):(\d{2})\)/g;
+    const tracklist = (row.tracklist as string) || "";
+
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(tracklist)) !== null) {
+      total += Number(match[1]) * 60 + Number(match[2]);
     }
   }
   return total;
