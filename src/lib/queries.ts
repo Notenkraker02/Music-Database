@@ -149,7 +149,7 @@ export async function fetchTotalPlaytime(): Promise<number> {
  
 // ── Genres / Formats / Decades ─────────────────────────────
 
-export async function fetchDistinctValues(column: "genre" | "format" | "country") {
+export async function fetchDistinctValues(column: "genre" | "format" | "country"): Promise<string[]> {
   const { data } = await supabase
     .from("songs")
     .select(column)
