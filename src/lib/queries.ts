@@ -51,14 +51,17 @@ export async function fetchSongs(opts: FetchSongsOpts = {}) {
   const to = from + pageSize - 1;
 
   query = query.order(sortField, { ascending: sortDir === "asc" });
+  
   // Secondary sort for stability
   if (sortField !== "title") {
     query = query.order("title", { ascending: true });
   }
+  
   query = query.range(from, to);
 
   const { data, error, count } = await query;
   if (error) throw error;
+  
   return { songs: (data || []) as Song[], total: count || 0 };
 }
 
@@ -68,7 +71,9 @@ export async function fetchSongById(id: string): Promise<Song | null> {
     .select("*")
     .eq("id", id)
     .single();
+    
   if (error) return null;
+  
   return data as Song;
 }
 
@@ -77,18 +82,23 @@ export async function fetchSongsByArtist(artist: string): Promise<Song[]> {
     .from("songs")
     .select("*")
     .eq("artist", artist)
-    .order("year", { ascending: true });
+    .order("year", { ascending: true })
+    // Safety limit to ensure an artist with many songs isn't truncated by the 1000 default
+    .limit(3000); 
+    
   if (error) throw error;
+  
   return (data || []) as Song[];
 }
 
 // ── Artists ────────────────────────────────────────────────
 
 export async function fetchArtists(search?: string) {
-  // Use RPC or a raw query approach — group by artist
+  // FIX: Added .limit(10000) to override Supabase's default 1000 row truncation
   let query = supabase
     .from("songs")
-    .select("artist");
+    .select("artist")
+    .limit(10000);
 
   if (search) {
     query = query.ilike("artist", `%${search}%`);
