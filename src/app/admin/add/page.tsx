@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlusCircle, Upload, CheckCircle2 } from "lucide-react";
 import { createSong } from "@/lib/queries";
@@ -8,7 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { useAdmin } from "@/lib/admin-context";
 import { FORMAT_OPTIONS } from "@/lib/types";
 
-export default function AddMusicPage() {
+// 1. Extract the main logic into a child component
+function AddMusicForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAdmin, login } = useAdmin();
@@ -252,5 +253,18 @@ export default function AddMusicPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 2. Export the main page, wrapping the form component in a Suspense boundary
+export default function AddMusicPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center p-12 text-ink-400">
+        Loading form...
+      </div>
+    }>
+      <AddMusicForm />
+    </Suspense>
   );
 }
