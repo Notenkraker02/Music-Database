@@ -221,7 +221,8 @@ export async function fetchAvailableTop4000Years(): Promise<number[]> {
     .limit(1000);
 
   if (!data) return [];
-  return [...new Set(data.map((r) => r.list_year))].sort();
+  
+  return [...new Set((data as Record<string, any>[]).map((r) => r.list_year as number))].sort((a, b) => a - b);
 }
 
 // ── My Top 4000 (cross-reference) ──────────────────────────
@@ -234,7 +235,10 @@ export async function fetchMyTop4000Positions(year: number): Promise<number[]> {
     .not(col as string, "is", null);
 
   if (!data) return [];
-  return data.map((r) => r[col as string] as number).filter((n) => n > 0);
+  
+  return (data as Record<string, any>[])
+    .map((r) => r[col as string] as number)
+    .filter((n) => n > 0);
 }
 
 // ── CRUD ───────────────────────────────────────────────────
