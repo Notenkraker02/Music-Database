@@ -13,7 +13,7 @@ interface FetchSongsOpts {
   sortDir?: SortDir;
   page?: number;
   pageSize?: number;
-}
+} 
 
 export async function fetchSongs(opts: FetchSongsOpts = {}) {
   const {
