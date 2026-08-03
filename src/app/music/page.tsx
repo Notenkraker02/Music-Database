@@ -33,8 +33,8 @@ export default function MusicPage() {
 
   // Load filter options once
   useEffect(() => {
-    fetchDistinctValues("genre").then(setGenres);
-    fetchDistinctValues("format").then(setFormats);
+    fetchDistinctValues("genre").then((data) => setGenres(data as string[]));
+    fetchDistinctValues("format").then((data) => setFormats(data as string[]));
   }, []);
 
   const loadSongs = useCallback(async () => {
