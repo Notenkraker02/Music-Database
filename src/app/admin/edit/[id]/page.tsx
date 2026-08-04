@@ -107,7 +107,7 @@ export default function EditMusicPage() {
     let coverPath = song.cover_path;
     if (coverFile) {
       const safeName = title.replace(/[^a-zA-Z0-9_-]/g, "_");
-      const storagePath = `covers/cover_${safeName}.jpg`;
+      const storagePath = `cover_${safeName}.jpg`;
       await supabase.storage.from("covers").upload(storagePath, coverFile, {
         contentType: coverFile.type,
         upsert: true,
