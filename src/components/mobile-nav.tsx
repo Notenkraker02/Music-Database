@@ -25,15 +25,9 @@ export function MobileNav() {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex flex-col items-center gap-1 px-2 py-1 text-xs transition-colors ${
-                active ? "text-groove" : "text-ink-500"
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {label}
+            {href}
+              <Icon className = "h5 w-5 shrink-0" />
+              <span className = "whitespace-nowrap">{label}</span>
             </Link>
           );
         })}
