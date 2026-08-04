@@ -26,7 +26,7 @@ export function CoverImage({ coverPath, alt, size = "md", className = "" }: Cove
   if (error || !coverPath) {
     return (
       <div
-        className={`${sizeClass} bg-ink-800 rounded-lg flex items-center justify-center ${className}`}
+        className={`${sizeClass} bg-red-500 text-white flex items-center justify-center ${className}`}
       >
         <Disc3 className="w-1/3 h-1/3 text-ink-600" />
       </div>
