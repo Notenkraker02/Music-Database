@@ -237,41 +237,53 @@ def import_top4000_list(year: int, filepath: str):
 # ── 4. Upload covers ────────────────────────────────────────
 
 def upload_covers():
-    """Upload cover images from a local 'covers' folder to Supabase Storage."""
     covers_dir = os.path.join(DATA_DIR, "covers")
     if not os.path.isdir(covers_dir):
         print("  No covers/ folder found — skipping cover upload")
         return
 
+    # Get a list of already uploaded files in the bucket to prevent duplicate errors
+    try:
+        existing_files = [f["name"] for f in sb.storage.from_("covers").list("covers")]
+    except Exception:
+        existing_files = []
+
     for fname in os.listdir(covers_dir):
         if not fname.lower().endswith((".jpg", ".jpeg", ".png")):
             continue
+            
         local_path = os.path.join(covers_dir, fname)
         storage_path = f"covers/{fname}"
 
-        with open(local_path, "rb") as f:
-            sb.storage.from_("covers").upload(
-                storage_path, f,
-                file_options={"content-type": "image/jpeg"}
-            )
-        print(f"  Uploaded {fname}")
+        try:
+            # Only upload if it doesn't already exist in the bucket
+            if fname not in existing_files:
+                with open(local_path, "rb") as f:
+                    sb.storage.from_("covers").upload(
+                        storage_path, f,
+                        file_options={"content-type": "image/jpeg"}
+                    )
+                print(f"  Uploaded {fname}")
+            else:
+                print(f"  Skipped (already exists): {fname}")
 
-        # Update matching song row
-        # cover filename pattern: cover_{sanitized_title}.jpg
-        # Try to match by filename
-        sb.table("songs").update({"cover_path": storage_path}).ilike(
-            "title", fname.replace("cover_", "").replace(".jpg", "").replace("_", "%")
-        ).execute()
+            clean_name = fname.replace("cover_", "").replace(".jpg", "").replace("_", "%")
+            sb.table("songs").update({"cover_path": storage_path}).ilike("title", clean_name).execute()
+        except Exception as e:
+            print(f"  ❌ Failed to process {fname}: {e}")
 
-    # Upload placeholder
     placeholder = os.path.join(DATA_DIR, "empty cover.jpg")
     if os.path.exists(placeholder):
-        with open(placeholder, "rb") as f:
-            sb.storage.from_("covers").upload(
-                "empty_cover.jpg", f,
-                file_options={"content-type": "image/jpeg"}
-            )
-        print("  Uploaded placeholder cover")
+        try:
+            if "empty_cover.jpg" not in existing_files:
+                with open(placeholder, "rb") as f:
+                    sb.storage.from_("covers").upload(
+                        "empty_cover.jpg", f,
+                        file_options={"content-type": "image/jpeg"}
+                    )
+                print("  Uploaded placeholder cover")
+        except Exception as e:
+            print(f"  ❌ Failed to upload placeholder: {e}")
 
     print("✅ Cover upload complete")
 
