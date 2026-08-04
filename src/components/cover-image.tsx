@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getCoverUrl } from "@/lib/supabase";
 import { Disc3 } from "lucide-react";
 
 interface CoverImageProps {
-  coverPath: string | null;
+  coverPath: string | null | undefined;
   alt: string;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
@@ -19,27 +19,27 @@ const SIZES = {
 };
 
 export function CoverImage({ coverPath, alt, size = "md", className = "" }: CoverImageProps) {
-  const [error, setError] = useState(false);
-  const url = getCoverUrl(coverPath);
+  useEffect(() => {
+    setError(false);
+  }, [coverPath]);
+
+  const cleanCoverPath = coverPath?.trim();
+  const url = cleanCoverPath ? getCoverUrl(cleanCoverPath) : null;
   const sizeClass = SIZES[size];
 
-  if (error || !coverPath) {
+  if (error || !url) {
     return (
       <div
-        className={`${sizeClass} bg-ink-800 rounded-lg flex items-center justify-center ${className}`}
+        className={`${sizeClass} ${className} flex items-center justify-center bg-ink-800 rounded-lg bg-ink-800 text-ink-500`}
       >
-        <Disc3 className="w-1/3 h-1/3 text-ink-600" />
+        <Disc3 className="w-1/2 h-1/2" />
       </div>
     );
   }
 
   return (
-    <img
-      src={url}
-      alt={alt}
-      loading="lazy"
-      onError={() => setError(true)}
-      className={`${sizeClass} object-cover rounded-lg ${className}`}
+    {url} => setError(true)}
+    className={`${sizeClass} object-cover rounded-lg ${className}`}
     />
   );
 }
