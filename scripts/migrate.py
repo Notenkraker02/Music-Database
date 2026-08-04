@@ -23,7 +23,6 @@ import math
 import pandas as pd
 from dotenv import load_dotenv
 from supabase import create_client
-from scripts import syncTop4000
 
 load_dotenv()
 
