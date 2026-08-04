@@ -7,6 +7,7 @@ import { createSong } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 import { useAdmin } from "@/lib/admin-context";
 import { FORMAT_OPTIONS } from "@/lib/types";
+import { autofillRankingsFromAnchors } from "@/lib/top4000-sync";
 
 // 1. Extract the main logic into a child component
 async function autofillRankings(artist: string, title: string, rankings: any) {
@@ -112,7 +113,7 @@ function AddMusicForm() {
       coverPath = storagePath;
     }
 
-    const rankings = await autofillRankings(artist.trim(), title.trim(), {
+    const rankings = await autofillRankingsFromAnchors({
       top2023: parseTopVal(top2023),
       top2024: parseTopVal(top2024),
       top2025: parseTopVal(top2025),

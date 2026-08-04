@@ -9,6 +9,7 @@ import { useAdmin } from "@/lib/admin-context";
 import { FORMAT_OPTIONS } from "@/lib/types";
 import type { Song } from "@/lib/types";
 import { PageSkeleton } from "@/components/loading";
+import { autofillRankingsFromAnchors } from "@/lib/top4000-sync";
 
 async function autofillRankings(artist: string, title: string, rankings: any) {
   const { data } = await supabase
@@ -136,7 +137,7 @@ export default function EditMusicPage() {
       coverPath = storagePath;
     }
 
-    const rankings = await autofillRankings(artist.trim(), title.trim(), {
+    const rankings = await autofillRankingsFromAnchors({
       top2023: parseTopVal(top2023),
       top2024: parseTopVal(top2024),
       top2025: parseTopVal(top2025),

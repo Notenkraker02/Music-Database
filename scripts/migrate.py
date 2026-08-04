@@ -23,6 +23,8 @@ import math
 import pandas as pd
 from dotenv import load_dotenv
 from supabase import create_client
+import unicodedata
+from collections import Counter, defaultdict
 
 load_dotenv()
 
@@ -298,42 +300,254 @@ def upload_covers():
 
     print("✅ Cover upload complete")
 
+    # ── 5. Sync Top 4000 rankings into songs ─────────────────────
+
+TOP4000_YEARS = [2023, 2024, 2025, 2026]
+
+
+def normalize_text(value):
+    """
+    Normalise text for robust matching inside Top 4000 lists.
+
+    Handles:
+    - different capital letters
+    - accents, e.g. Beyoncé vs Beyonce
+    - punctuation differences
+    - extra spaces
+    - & versus and
+    """
+    if value is None:
+        return ""
+
+    text = str(value)
+
+    # Remove accents, e.g. é -> e
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(
+        char for char in text
+        if not unicodedata.combining(char)
+    )
+
+    text = text.lower()
+
+    # Normalise common textual differences
+    text = text.replace("&", " and ")
+
+    # Remove punctuation but keep letters, numbers and spaces
+    text = re.sub(r"[^\w\s]", " ", text)
+
+    # Collapse repeated spaces
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
+
+
+def top4000_key(artist, title):
+    """
+    Create a comparable key from Top 4000 artist/title.
+    Important: this key is based on Top 4000 entries,
+    not on the collection song title.
+    """
+    return (
+        normalize_text(artist),
+        normalize_text(title),
+    )
+
+
+def fetch_all_rows(table_name, select_clause="*"):
+    """
+    Fetch all rows from a Supabase table using pagination.
+
+    This avoids a common issue where Supabase only returns
+    the first page of results. Top 4000 lists can easily exceed
+    the default response size.
+    """
+    all_rows = []
+    batch_size = 1000
+    start = 0
+
+    while True:
+        end = start + batch_size - 1
+
+        response = (
+            sb.table(table_name)
+            .select(select_clause)
+            .range(start, end)
+            .execute()
+        )
+
+        rows = response.data or []
+        all_rows.extend(rows)
+
+        if len(rows) < batch_size:
+            break
+
+        start += batch_size
+
+    return all_rows
+
+
 def sync_top4000():
+    """
+    Fill missing topYYYY values in songs by using existing rankings
+    as anchors.
 
-    rankings = sb.table("top4000_lists").select("*").execute().data
+    Example:
+    - songs.top2023 = 600
+    - Look up Top 4000 2023 position 600
+    - Suppose that is Eagles - Hotel California
+    - Find Eagles - Hotel California in all other Top 4000 years
+    - Fill only empty topYYYY fields
 
-    ranking_lookup = {}
+    This does NOT match on songs.title, because the record title
+    may contain edition/version text that differs from the actual
+    Top 4000 song title.
+    """
+
+    print("\n── Sync Top 4000 rankings ──")
+
+    rankings = fetch_all_rows(
+        "top4000_lists",
+        "list_year,position,artist,title"
+    )
+
+    songs = fetch_all_rows(
+        "songs",
+        "id,artist,title,top4000,top2023,top2024,top2025,top2026"
+    )
+
+    print(f"Loaded {len(rankings)} Top 4000 entries")
+    print(f"Loaded {len(songs)} songs")
+
+    # 1. Lookup Top 4000 entry by exact year + position
+    # Example: (2023, 600) -> Queen - Bohemian Rhapsody
+    ranking_by_year_position = {}
+
+    # 2. Lookup all rankings for the same canonical Top 4000 song
+    # Example: ("queen", "bohemian rhapsody") -> {2023: 10, 2024: 9}
+    rankings_by_canonical_song = defaultdict(dict)
+
     for r in rankings:
-        key = (r["artist"].strip().lower(), r["title"].strip().lower())
+        list_year = safe_int(r.get("list_year"))
+        position = safe_int(r.get("position"))
+        artist = clean(r.get("artist"))
+        title = clean(r.get("title"))
 
-        if key not in ranking_lookup:
-            ranking_lookup[key] = {}
-
-        ranking_lookup[key][r["list_year"]] = r["position"]
-    songs = sb.table("songs").select("*").execute()
-
-    updated = 0
-
-    for song in songs.data:
-        key = (song["artist"].strip().lower(), song["title"].strip().lower())
-        if key not in ranking_lookup:
+        if list_year is None or position is None or not artist or not title:
             continue
+
+        canonical_key = top4000_key(artist, title)
+
+        ranking_by_year_position[(list_year, position)] = {
+            "list_year": list_year,
+            "position": position,
+            "artist": artist,
+            "title": title,
+            "canonical_key": canonical_key,
+        }
+
+        rankings_by_canonical_song[canonical_key][list_year] = position
+
+    updated_count = 0
+    skipped_no_anchor = 0
+    skipped_conflict = 0
+    missing_anchor_count = 0
+
+    for song in songs:
+        song_id = song.get("id")
+        display_artist = song.get("artist") or ""
+        display_title = song.get("title") or ""
+
+        # Find existing rankings in the song record.
+        # These are the anchors.
+        anchors = []
+
+        for year in TOP4000_YEARS:
+            column = f"top{year}"
+            position = safe_int(song.get(column))
+
+            if position is None:
+                continue
+
+            top4000_entry = ranking_by_year_position.get((year, position))
+
+            if top4000_entry is None:
+                missing_anchor_count += 1
+                print(
+                    f"  WARNING: Existing ranking could not be found in Top4000 list: "
+                    f"{display_artist} - {display_title}, {year} #{position}"
+                )
+                continue
+
+            anchors.append(top4000_entry)
+
+        # If there is no existing ranking, we cannot safely infer the real
+        # Top 4000 song, because the collection title may differ.
+        if not anchors:
+            skipped_no_anchor += 1
+            continue
+
+        # If multiple existing rankings are present, they should all point
+        # to the same canonical Top 4000 song.
+        canonical_keys = [a["canonical_key"] for a in anchors]
+        key_counts = Counter(canonical_keys)
+
+        if len(key_counts) > 1:
+            skipped_conflict += 1
+
+            readable_anchors = [
+                f'{a["list_year"]} #{a["position"]}: {a["artist"]} - {a["title"]}'
+                for a in anchors
+            ]
+
+            print(
+                f"  WARNING: Conflicting Top4000 anchors for "
+                f"{display_artist} - {display_title}. Skipping."
+            )
+            for anchor_text in readable_anchors:
+                print(f"    - {anchor_text}")
+
+            continue
+
+        canonical_key = canonical_keys[0]
+
+        # These are all known rankings for the actual Top 4000 song.
+        known_years = rankings_by_canonical_song.get(canonical_key, {})
+
         updates = {}
 
-        years = ranking_lookup[key]
+        for year in TOP4000_YEARS:
+            column = f"top{year}"
 
-        if not song.get("top2023") and years.get(2023):
-            updates["top2023"] = years[2023]
-        if not song.get("top2024") and years.get(2024):
-            updates["top2024"] = years[2024]
-        if not song.get("top2025") and years.get(2025):
-            updates["top2025"] = years[2025]
-        if not song.get("top2026") and years.get(2026):
-            updates["top2026"] = years[2026]
+            # Only fill empty database fields.
+            # This preserves manual corrections.
+            if song.get(column) is None and year in known_years:
+                updates[column] = known_years[year]
+
+        # If we found a Top4000 anchor, the song is definitely in Top4000.
+        if song.get("top4000") is not True:
+            updates["top4000"] = True
+
         if updates:
-            sb.table("songs").update(updates).eq("id", song["id"]).execute()
-            updated += 1
-    print(f"✅ Updated {updated} songs with Top 4000 rankings")
+            (
+                sb.table("songs")
+                .update(updates)
+                .eq("id", song_id)
+                .execute()
+            )
+
+            updated_count += 1
+
+            print(
+                f"  Updated {display_artist} - {display_title}: {updates}"
+            )
+
+    print(f"✅ Sync complete")
+    print(f"  Updated songs: {updated_count}")
+    print(f"  Skipped, no existing ranking anchor: {skipped_no_anchor}")
+    print(f"  Skipped, conflicting anchors: {skipped_conflict}")
+    print(f"  Existing rankings not found in Top4000 lists: {missing_anchor_count}")
+
 
 # ── Main ─────────────────────────────────────────────────────
 
@@ -344,9 +558,6 @@ def main():
 
     print("\n── Step 1: Import songs ──")
     top1000_rows = import_songs()
-
-    print("\n── Step 2: Import Top 1000 ──")
-    import_top1000(top1000_rows)
 
     print("\n── Step 3: Import Top 4000 lists ──")
     import_top4000_list(2023, os.path.join(DATA_DIR, "Top 4000 2023.xlsx"))
