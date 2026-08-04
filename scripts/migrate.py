@@ -23,6 +23,7 @@ import math
 import pandas as pd
 from dotenv import load_dotenv
 from supabase import create_client
+from scripts import syncTop4000
 
 load_dotenv()
 
@@ -130,14 +131,22 @@ def import_songs():
             "cover_path": None,  # covers uploaded separately
         })
 
+    existing = sb.table("songs").select("artist", "title").execute()
+    existing_songs = {(r["artist"].strip().lower(), r["title"].strip().lower()) for r in existing.data}
+    new_records = []
+    for record in records:
+        key = (record["artist"].strip().lower(), record["title"].strip().lower())
+        if key not in existing_songs:
+            new_records.append(record)
+    
     # Batch insert in chunks of 500
     BATCH = 500
-    for i in range(0, len(records), BATCH):
-        batch = records[i:i+BATCH]
-        res = sb.table("songs").insert(batch).execute()
+    for i in range(0, len(new_records), BATCH):
+        batch = new_records[i:i+BATCH]
+        sb.table("songs").insert(batch).execute()
         print(f"  Inserted songs {i+1}–{i+len(batch)}")
 
-    print(f"✅ Imported {len(records)} songs")
+    print(f"✅ Imported {len(new_records)} songs")
     return top1000_rows
 
 
@@ -225,11 +234,14 @@ def import_top4000_list(year: int, filepath: str):
             "song_year": safe_int(row.get("Jaar")),
         })
 
+    existing = sb.table("top4000_lists").select("list_year", "position").eq("list_year", year).execute()
+    existing_entries = {(r["list_year"], r["position"]) for r in existing.data}
+    new_records = [r for r in records if (r["list_year"], r["position"]) not in existing_entries]
+    print(f"Found {len(new_records)} new entries for {year}")
     BATCH = 500
-    for i in range(0, len(records), BATCH):
-        batch = records[i:i+BATCH]
+    for i in range(0, len(new_records), BATCH):
+        batch = new_records[i:i+BATCH]
         sb.table("top4000_lists").insert(batch).execute()
-        print(f"  Inserted top4000 {year} rows {i+1}–{i+len(batch)}")
 
     print(f"✅ Imported {len(records)} entries for Top 4000 {year}")
 
@@ -287,6 +299,42 @@ def upload_covers():
 
     print("✅ Cover upload complete")
 
+def sync_top4000():
+
+    rankings = sb.table("top4000_lists").select("*").execute().data
+
+    ranking_lookup = {}
+    for r in rankings:
+        key = (r["artist"].strip().lower(), r["title"].strip().lower())
+
+        if key not in ranking_lookup:
+            ranking_lookup[key] = {}
+
+        ranking_lookup[key][r["list_year"]] = r["position"]
+    songs = sb.table("songs").select("*").execute()
+
+    updated = 0
+
+    for song in songs.data:
+        key = (song["artist"].strip().lower(), song["title"].strip().lower())
+        if key not in ranking_lookup:
+            continue
+        updates = {}
+
+        years = ranking_lookup[key]
+
+        if not song.get("top2023") and years.get(2023):
+            updates["top2023"] = years[2023]
+        if not song.get("top2024") and years.get(2024):
+            updates["top2024"] = years[2024]
+        if not song.get("top2025") and years.get(2025):
+            updates["top2025"] = years[2025]
+        if not song.get("top2026") and years.get(2026):
+            updates["top2026"] = years[2026]
+        if updates:
+            sb.table("songs").update(updates).eq("id", song["id"]).execute()
+            updated += 1
+    print(f"✅ Updated {updated} songs with Top 4000 rankings")
 
 # ── Main ─────────────────────────────────────────────────────
 
@@ -305,6 +353,7 @@ def main():
     import_top4000_list(2023, os.path.join(DATA_DIR, "Top 4000 2023.xlsx"))
     import_top4000_list(2024, os.path.join(DATA_DIR, "Top 4000 2024.xlsx"))
     import_top4000_list(2025, os.path.join(DATA_DIR, "Top 4000 2025.xlsx"))
+    sync_top4000()
 
     print("\n── Step 4: Upload covers ──")
     upload_covers()
