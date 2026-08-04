@@ -228,7 +228,7 @@ export async function fetchAvailableTop4000Years(): Promise<number[]> {
   const { data } = await supabase
     .from("top4000_lists")
     .select("list_year")
-    .limit(1000);
+    .limit(20000);
 
   if (!data) return [];
   
