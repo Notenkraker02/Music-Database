@@ -9,6 +9,27 @@ import { useAdmin } from "@/lib/admin-context";
 import { FORMAT_OPTIONS } from "@/lib/types";
 
 // 1. Extract the main logic into a child component
+async function autofillRankings(artist: string, title: string, rankings: any) {
+  const { data } = await supabase
+    .from("top4000_lists")
+    .select("list_year,position")
+    .ilike("artist", artist)
+    .ilike("title", title);
+
+  if (!data) return rankings;
+
+  const updated = { ...rankings };
+
+  for (const row of data) {
+    if (row.list_year === 2023 && !updated.top2023) updated.top2023 = row.position;
+    if (row.list_year === 2024 && !updated.top2024) updated.top2024 = row.position;
+    if (row.list_year === 2025 && !updated.top2025) updated.top2025 = row.position;
+    if (row.list_year === 2026 && !updated.top2026) updated.top2026 = row.position;
+  }
+
+  return updated;
+}
+
 function AddMusicForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,6 +112,12 @@ function AddMusicForm() {
       coverPath = storagePath;
     }
 
+    const rankings = await autofillRankings(artist.trim(), title.trim(), {
+      top2023: parseTopVal(top2023),
+      top2024: parseTopVal(top2024),
+      top2025: parseTopVal(top2025),
+      top2026: parseTopVal(top2026),
+    });
     await createSong({
       artist: artist.trim(),
       title: title.trim(),
@@ -104,10 +131,10 @@ function AddMusicForm() {
       description: description || null,
       price_raw: price || null,
       price_eur: parsePriceVal(price),
-      top2023: parseTopVal(top2023),
-      top2024: parseTopVal(top2024),
-      top2025: parseTopVal(top2025),
-      top2026: parseTopVal(top2026),
+      top2023: rankings.top2023,
+      top2024: rankings.top2024,
+      top2025: rankings.top2025,
+      top2026: rankings.top2026,
       cover_path: coverPath,
     });
 

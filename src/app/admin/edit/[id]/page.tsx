@@ -10,6 +10,27 @@ import { FORMAT_OPTIONS } from "@/lib/types";
 import type { Song } from "@/lib/types";
 import { PageSkeleton } from "@/components/loading";
 
+async function autofillRankings(artist: string, title: string, rankings: any) {
+  const { data } = await supabase
+    .from("top4000_lists")
+    .select("list_year,position")
+    .ilike("artist", artist)
+    .ilike("title", title);
+
+  if (!data) return rankings;
+
+  const updated = { ...rankings };
+
+  for (const row of data) {
+    if (row.list_year === 2023 && !updated.top2023) updated.top2023 = row.position;
+    if (row.list_year === 2024 && !updated.top2024) updated.top2024 = row.position;
+    if (row.list_year === 2025 && !updated.top2025) updated.top2025 = row.position;
+    if (row.list_year === 2026 && !updated.top2026) updated.top2026 = row.position;
+  }
+
+  return updated;
+}
+
 export default function EditMusicPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -115,6 +136,13 @@ export default function EditMusicPage() {
       coverPath = storagePath;
     }
 
+    const rankings = await autofillRankings(artist.trim(), title.trim(), {
+      top2023: parseTopVal(top2023),
+      top2024: parseTopVal(top2024),
+      top2025: parseTopVal(top2025),
+      top2026: parseTopVal(top2026),
+    });
+
     await updateSong(id, {
       artist: artist.trim(),
       title: title.trim(),
@@ -128,10 +156,10 @@ export default function EditMusicPage() {
       description: description || null,
       price_raw: price || null,
       price_eur: parsePriceVal(price),
-      top2023: parseTopVal(top2023),
-      top2024: parseTopVal(top2024),
-      top2025: parseTopVal(top2025),
-      top2026: parseTopVal(top2026),
+      top2023: rankings.top2023,
+      top2024: rankings.top2024,
+      top2025: rankings.top2025,
+      top2026: rankings.top2026,
       cover_path: coverPath,
     });
 
