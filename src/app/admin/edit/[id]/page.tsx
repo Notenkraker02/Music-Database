@@ -58,6 +58,7 @@ export default function EditMusicPage() {
   const [top2025, setTop2025] = useState("");
   const [top2026, setTop2026] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [removeCover, setRemoveCover] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -127,13 +128,20 @@ export default function EditMusicPage() {
     setSaving(true);
 
     let coverPath = song.cover_path;
-    if (coverFile) {
+
+    if (removeCover) {
+      coverPath = null;
+    } else if (coverFile) {
       const safeName = title.replace(/[^a-zA-Z0-9_-]/g, "_");
       const storagePath = `cover_${safeName}.jpg`;
-      await supabase.storage.from("covers").upload(storagePath, coverFile, {
-        contentType: coverFile.type,
-        upsert: true,
-      });
+
+      await supabase.storage
+        .from("covers")
+        .upload(storagePath, coverFile, {
+          contentType: coverFile.type,
+          upsert: true,
+        });
+
       coverPath = storagePath;
     }
 
@@ -252,12 +260,38 @@ export default function EditMusicPage() {
         </div>
 
         <div>
-          <label className="block text-sm text-ink-400 mb-1.5">Replace cover image</label>
+          <label className="block text-sm text-ink-400 mb-1.5">Cover image</label>
           <label className="flex items-center gap-3 p-4 rounded-lg border border-dashed border-ink-700 hover:border-ink-500 cursor-pointer transition-colors">
             <Upload className="w-5 h-5 text-ink-500" />
-            <span className="text-sm text-ink-400">{coverFile ? coverFile.name : "Click to upload a new cover"}</span>
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => setCoverFile(e.target.files?.[0] || null)} />
+            <span className="text-sm text-ink-400">
+              {coverFile ? coverFile.name : "Click to upload a new cover"}
+            </span>
+
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                setCoverFile(e.target.files?.[0] || null);
+                setRemoveCover(false);
+              }}
+            />
           </label>
+
+          {song.cover_path && (
+            <label className="mt-3 flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={removeCover}
+                onChange={(e) => {
+                  setRemoveCover(e.target.checked);
+                  if (e.target.checked) setCoverFile(null);
+                }}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-red-400">Remove current cover</span>
+            </label>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
