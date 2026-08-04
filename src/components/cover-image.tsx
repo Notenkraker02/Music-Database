@@ -15,7 +15,7 @@ const SIZES = {
   sm: "w-12 h-12",
   md: "w-24 h-24",
   lg: "w-48 h-48",
-  xl: "w-full aspect-square max-w-md",
+  xl: "w-full h-64",
 };
 
 export function CoverImage({ coverPath, alt, size = "md", className = "" }: CoverImageProps) {
