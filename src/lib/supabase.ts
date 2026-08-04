@@ -6,9 +6,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /** Build a public URL for a cover stored in Supabase Storage */
-export function getCoverUrl(coverPath: string | null): string {
-  if (!coverPath) {
-    return `${supabaseUrl}/storage/v1/object/public/covers/empty_cover.jpg`;
-  }
-  return `${supabaseUrl}/storage/v1/object/public/${coverPath}`;
+export function getCoverUrl(path: string | null) {
+  if (!path) return "";
+  
+  // Clean the path in case it already includes the "covers/" folder name
+  const cleanPath = path.startsWith("covers/") ? path.replace("covers/", "") : path;
+  
+  const { data } = supabase.storage.from("covers").getPublicUrl(cleanPath);
+  return data.publicUrl;
 }
