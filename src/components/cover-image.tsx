@@ -38,8 +38,12 @@ export function CoverImage({ coverPath, alt, size = "md", className = "" }: Cove
   }
 
   return (
-    {url} => setError(true)}
-    className={`${sizeClass} object-cover rounded-lg ${className}`}
+    <img
+      src={url}
+      alt={alt}
+      loading="lazy"
+      onError={() => setError(true)}
+      className={`${sizeClass} object-cover rounded-lg ${className}`}
     />
   );
 }
