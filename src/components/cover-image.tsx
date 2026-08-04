@@ -44,7 +44,7 @@ const SIZES = {
 //   );
 // }
 
-export function CoverImage({ coverPath, alt}: {coverPath: string | null, alt: string}) {
+export function CoverImage({ coverPath, alt}: {coverPath: string | null; alt: string;}) {
   return ( <div 
     style ={{ width = 200,
       height = 200,
