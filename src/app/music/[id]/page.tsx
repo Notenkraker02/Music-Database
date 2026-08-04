@@ -54,13 +54,16 @@ export default function SongDetailPage() {
     );
   }
 
-  // Extract the rankings to map over them cleanly
-  const rankings = [
-    { year: 2023, pos: song.top2023 },
-    { year: 2024, pos: song.top2024 },
-    { year: 2025, pos: song.top2025 },
-    { year: 2026, pos: song.top2026 },
-  ].filter((r) => r.pos != null);
+  // Pre-map the rankings for easy lookup
+  const getRanking = (year: number) => {
+    const r = [
+      { year: 2023, pos: song.top2023 },
+      { year: 2024, pos: song.top2024 },
+      { year: 2025, pos: song.top2025 },
+      { year: 2026, pos: song.top2026 },
+    ].find(x => x.year === year);
+    return r?.pos ? `#${r.pos}` : "...";
+  };
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -114,57 +117,49 @@ export default function SongDetailPage() {
               <DetailItem label="Genre" value={song.genre} />
               <DetailItem label="Format" value={song.format} />
               <DetailItem label="Country" value={song.country} />
-              <DetailItem label="Original" value={song.original === "Yes" ? "Yes" : "Copy"} />
+              <DetailItem label="Original" value={song.original === "Yes" ? "Yes" : (song.original === "Copy" ? "Copy" : null)} />
               <DetailItem 
                 label="Estimated Value" 
-                value={song.price_eur != null && song.price_eur > 0 ? `€${song.price_eur.toFixed(2).replace(".", ",")}` : undefined} 
+                value={song.price_eur != null && song.price_eur > 0 ? `€${song.price_eur.toFixed(2).replace(".", ",")}` : null} 
               />
             </div>
             
-            {/* Top 4000 Subtle Rankings */}
-            {(song.top4000 || rankings.length > 0) && (
-              <div className="pt-6 mt-6 border-t border-ink-800/50">
-                <span className="block text-xs font-semibold text-ink-500 uppercase tracking-wider mb-3">Top 4000 History</span>
-                <div className="flex flex-wrap gap-2">
-                  {song.top4000 && (
-                    <span className="text-xs font-medium text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
-                      Featured
-                    </span>
-                  )}
-                  {rankings.map((r) => (
-                    <span key={r.year} className="text-xs text-ink-300 bg-ink-800/50 px-2.5 py-1 rounded border border-ink-700/50">
-                      {r.year}: <span className="text-white font-medium">#{r.pos}</span>
-                    </span>
-                  ))}
-                </div>
+            {/* Top 4000 Subtle Rankings (Always Visible) */}
+            <div className="pt-6 mt-6 border-t border-ink-800/50">
+              <span className="block text-xs font-semibold text-ink-500 uppercase tracking-wider mb-3">Top 4000 History</span>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs text-ink-300 bg-ink-800/50 px-2.5 py-1 rounded border border-ink-700/50">
+                  Featured: <span className={`font-medium ${song.top4000 ? "text-amber-400" : "text-white"}`}>{song.top4000 ? "Yes" : "..."}</span>
+                </span>
+                {[2023, 2024, 2025, 2026].map((year) => (
+                  <span key={year} className="text-xs text-ink-300 bg-ink-800/50 px-2.5 py-1 rounded border border-ink-700/50">
+                    {year}: <span className="text-white font-medium">{getRanking(year)}</span>
+                  </span>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Tracklist */}
-        {song.tracklist && (
-          <div className="card p-6 h-full">
-            <h2 className="font-display font-bold text-white mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-ink-500" /> Tracklist
-            </h2>
-            <div className="text-ink-300 whitespace-pre-line leading-relaxed text-sm font-mono bg-ink-900/50 p-4 rounded-lg border border-ink-800/50">
-              {song.tracklist}
-            </div>
+        {/* Tracklist (Always Visible) */}
+        <div className="card p-6 h-full">
+          <h2 className="font-display font-bold text-white mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-ink-500" /> Tracklist
+          </h2>
+          <div className={`whitespace-pre-line leading-relaxed text-sm font-mono bg-ink-900/50 p-4 rounded-lg border border-ink-800/50 ${song.tracklist ? "text-ink-300" : "text-ink-600"}`}>
+            {song.tracklist || "..."}
           </div>
-        )}
+        </div>
 
-        {/* Description / Notes */}
-        {song.description && (
-          <div className="card p-6 h-full">
-            <h2 className="font-display font-bold text-white mb-4">Notes</h2>
-            <p className="text-ink-300 text-sm leading-relaxed bg-ink-900/50 p-4 rounded-lg border border-ink-800/50">
-              {song.description}
-            </p>
-          </div>
-        )}
+        {/* Description / Notes (Always Visible) */}
+        <div className="card p-6 h-full">
+          <h2 className="font-display font-bold text-white mb-4">Notes</h2>
+          <p className={`leading-relaxed text-sm bg-ink-900/50 p-4 rounded-lg border border-ink-800/50 ${song.description ? "text-ink-300" : "text-ink-600"}`}>
+            {song.description || "..."}
+          </p>
+        </div>
       </div>
 
       {/* Related songs by same artist */}
@@ -192,13 +187,17 @@ export default function SongDetailPage() {
   );
 }
 
-// Small helper for the structured grid view
+// Small helper for the structured grid view (now always displays "..." when empty)
 function DetailItem({ label, value }: { label: string; value: string | number | undefined | null }) {
-  if (value === undefined || value === null || value === "") return null;
+  const displayValue = (value === undefined || value === null || value === "") ? "..." : value;
+  const isPlaceholder = displayValue === "...";
+  
   return (
     <div>
       <span className="block text-xs font-semibold text-ink-500 uppercase tracking-wider mb-1.5">{label}</span>
-      <span className="block text-sm text-ink-100 font-medium">{value}</span>
+      <span className={`block text-sm font-medium ${isPlaceholder ? "text-ink-600" : "text-ink-100"}`}>
+        {displayValue}
+      </span>
     </div>
   );
 }
