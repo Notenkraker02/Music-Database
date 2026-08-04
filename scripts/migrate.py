@@ -266,7 +266,7 @@ def upload_covers():
             continue
             
         local_path = os.path.join(covers_dir, fname)
-        storage_path = f"covers/{fname}"
+        storage_path = f"{fname}"
 
         try:
             # Only upload if it doesn't already exist in the bucket

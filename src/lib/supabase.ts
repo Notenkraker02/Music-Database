@@ -19,6 +19,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export function getCoverUrl(path: string | null){
   if (!path) return "";
 
-  const { data } = supabase.storage.from("covers").getPublicUrl(path);
+  const cleanPath = path.startsWith("covers/") ? path.replace("covers/", "") : path;
+  const { data } = supabase.storage.from("covers").getPublicUrl(cleanPath);
   return data.publicUrl ?? "";
 }
