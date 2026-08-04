@@ -21,4 +21,4 @@ export function getCoverUrl(path: string | null){
 
   const { data } = supabase.storage.from("covers").getPublicUrl(path);
   return data.publicUrl ?? "";
-}
+} 
