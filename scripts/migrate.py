@@ -280,19 +280,8 @@ def upload_covers():
             else:
                 print(f"  Skipped (already exists): {fname}")
 
-            # clean_name = fname.replace("cover_", "").replace(".jpg", "").replace("_", "%")
-            # sb.table("songs").update({"cover_path": storage_path}).ilike("title", clean_name).execute()
-            clean_name = os.path.splitext(fname)[0].replace("cover_", "")
-            search_title = clean_name.replace("_", " ")
-
-            result = (
-                sb.table("songs")
-                .update({"cover_path": storage_path})
-                .ilike("title", search_title)
-                .execute()
-            )
-
-            print(f"{fname} -> matched {len(result.data)} song(s)")
+            clean_name = fname.replace("cover_", "").replace(".jpg", "").replace("_", "%")
+            sb.table("songs").update({"cover_path": storage_path}).ilike("title", clean_name).execute()
         except Exception as e:
             print(f"  ❌ Failed to process {fname}: {e}")
 

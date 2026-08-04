@@ -130,8 +130,16 @@ export default function EditMusicPage() {
     let coverPath = song.cover_path;
 
     if (removeCover) {
+      if (song.cover_path) {
+        await supabase.storage
+          .from("covers")
+          .remove([song.cover_path]);
+      }
+
       coverPath = null;
     } else if (coverFile) {
+      const oldCover = song.cover_path;
+
       const safeName = title.replace(/[^a-zA-Z0-9_-]/g, "_");
       const storagePath = `cover_${safeName}.jpg`;
 
@@ -141,6 +149,12 @@ export default function EditMusicPage() {
           contentType: coverFile.type,
           upsert: true,
         });
+
+      if (oldCover && oldCover !== storagePath) {
+        await supabase.storage
+          .from("covers")
+          .remove([oldCover]);
+      }
 
       coverPath = storagePath;
     }
