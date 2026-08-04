@@ -19,15 +19,21 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur md:hidden">
-      <div className="flex overflow-x-auto scrollbar-hide">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-ink-900 border-t border-ink-800 z-40 safe-area-bottom">
+      <div className="flex items-center justify-around h-16">
         {MOBILE_ITEMS.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
-            {href}
-              <Icon className = "h5 w-5 shrink-0" />
-              <span className = "whitespace-nowrap">{label}</span>
+            <Link
+              key={href}
+              href={href}
+              className={`flex flex-col items-center gap-1 px-2 py-1 text-xs transition-colors ${
+                active ? "text-groove" : "text-ink-500"
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              {label}
             </Link>
           );
         })}
