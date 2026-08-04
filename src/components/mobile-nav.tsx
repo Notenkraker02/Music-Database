@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, Users, Trophy, PlusCircle } from "lucide-react";
+import { Home, Music, Users, Trophy, Star, ListMusic, PlusCircle, BarChart3, Settings } from "lucide-react";
 
 const MOBILE_ITEMS = [
   { href: "/", label: "Home", icon: Home },
   { href: "/music", label: "Music", icon: Music },
   { href: "/artists", label: "Artists", icon: Users },
-  { href: "/top-1000", label: "Top 1000", icon: Trophy },
+  { href: "/my-top-4000", label: "My Top 4000", icon: Star },
+  { href: "/top-4000", label: "Top 4000 Lists", icon: ListMusic },
+  { href: "/insights", label: "Insights", icon: BarChart3 },
   { href: "/admin/add", label: "Add", icon: PlusCircle },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function MobileNav() {
