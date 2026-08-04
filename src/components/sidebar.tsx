@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, Music, Users, Trophy, Star, ListMusic,
+  Home, Music, Users, Star, ListMusic,
   PlusCircle, BarChart3, Settings, Disc3
 } from "lucide-react";
 
@@ -11,7 +11,6 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/music", label: "All Music", icon: Music },
   { href: "/artists", label: "Artists", icon: Users },
-  { href: "/top-1000", label: "Top 1000", icon: Trophy },
   { href: "/my-top-4000", label: "My Top 4000", icon: Star },
   { href: "/top-4000", label: "Top 4000 Lists", icon: ListMusic },
   { href: "/insights", label: "Insights", icon: BarChart3 },
