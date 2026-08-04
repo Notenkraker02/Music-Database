@@ -54,6 +54,14 @@ export default function SongDetailPage() {
     );
   }
 
+  // Extract the rankings to map over them cleanly
+  const rankings = [
+    { year: 2023, pos: song.top2023 },
+    { year: 2024, pos: song.top2024 },
+    { year: 2025, pos: song.top2025 },
+    { year: 2026, pos: song.top2026 },
+  ].filter((r) => r.pos != null);
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Back button */}
@@ -100,7 +108,7 @@ export default function SongDetailPage() {
               )}
             </div>
 
-            {/* Structured Data Grid (similar to add/edit view) */}
+            {/* Structured Data Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-4 pt-8 mt-6 border-t border-ink-800/50">
               <DetailItem label="Year" value={song.year} />
               <DetailItem label="Genre" value={song.genre} />
@@ -113,12 +121,22 @@ export default function SongDetailPage() {
               />
             </div>
             
-            {/* Top 4000 simple badge (Optional: kept just as a yes/no indicator) */}
-            {song.top4000 && (
+            {/* Top 4000 Subtle Rankings */}
+            {(song.top4000 || rankings.length > 0) && (
               <div className="pt-6 mt-6 border-t border-ink-800/50">
-                <span className="badge bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  Top 4000 List Featured
-                </span>
+                <span className="block text-xs font-semibold text-ink-500 uppercase tracking-wider mb-3">Top 4000 History</span>
+                <div className="flex flex-wrap gap-2">
+                  {song.top4000 && (
+                    <span className="text-xs font-medium text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
+                      Featured
+                    </span>
+                  )}
+                  {rankings.map((r) => (
+                    <span key={r.year} className="text-xs text-ink-300 bg-ink-800/50 px-2.5 py-1 rounded border border-ink-700/50">
+                      {r.year}: <span className="text-white font-medium">#{r.pos}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
