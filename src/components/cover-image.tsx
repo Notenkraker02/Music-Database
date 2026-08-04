@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getCoverUrl } from "@/lib/supabase";
 import { Disc3 } from "lucide-react";
 
 interface CoverImageProps {
-  coverPath: string | null | undefined;
+  coverPath: string | null;
   alt: string;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
@@ -19,20 +19,16 @@ const SIZES = {
 };
 
 export function CoverImage({ coverPath, alt, size = "md", className = "" }: CoverImageProps) {
-  useEffect(() => {
-    setError(false);
-  }, [coverPath]);
-
-  const cleanCoverPath = coverPath?.trim();
-  const url = cleanCoverPath ? getCoverUrl(cleanCoverPath) : null;
+  const [error, setError] = useState(false);
+  const url = getCoverUrl(coverPath);
   const sizeClass = SIZES[size];
 
-  if (error || !url) {
+  if (error || !coverPath) {
     return (
       <div
-        className={`${sizeClass} ${className} flex items-center justify-center bg-ink-800 rounded-lg bg-ink-800 text-ink-500`}
+        className={`${sizeClass} bg-ink-800 rounded-lg flex items-center justify-center ${className}`}
       >
-        <Disc3 className="w-1/2 h-1/2" />
+        <Disc3 className="w-1/3 h-1/3 text-ink-600" />
       </div>
     );
   }
