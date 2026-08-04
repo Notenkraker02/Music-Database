@@ -16,9 +16,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 //   return data.publicUrl;
 // }
 
-export function getCoverUrl(path: string | null | undefined){
-  if (!path) return null;
+export function getCoverUrl(path: string | null){
+  if (!path) return "";
 
   const { data } = supabase.storage.from("covers").getPublicUrl(path);
-  return data.publicUrl;
+  return data.publicUrl ?? "";
 }
