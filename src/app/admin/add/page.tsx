@@ -58,7 +58,7 @@ async function compressImage(file: File): Promise<File> {
           );
         },
         "image/jpeg",
-        0.75 // JPEG quality
+        0.60 // JPEG quality
       );
     };
 
