@@ -9,26 +9,62 @@ import { useAdmin } from "@/lib/admin-context";
 import { FORMAT_OPTIONS } from "@/lib/types";
 import { autofillRankingsFromAnchors } from "@/lib/top4000-sync";
 
-// 1. Extract the main logic into a child component
-async function autofillRankings(artist: string, title: string, rankings: any) {
-  const { data } = await supabase
-    .from("top4000_lists")
-    .select("list_year,position")
-    .ilike("artist", artist)
-    .ilike("title", title);
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
 
-  if (!data) return rankings;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
 
-  const updated = { ...rankings };
+      const maxSize = 800; // maximum width/height
 
-  for (const row of data) {
-    if (row.list_year === 2023 && !updated.top2023) updated.top2023 = row.position;
-    if (row.list_year === 2024 && !updated.top2024) updated.top2024 = row.position;
-    if (row.list_year === 2025 && !updated.top2025) updated.top2025 = row.position;
-    if (row.list_year === 2026 && !updated.top2026) updated.top2026 = row.position;
-  }
+      let width = img.width;
+      let height = img.height;
 
-  return updated;
+      if (width > height) {
+        if (width > maxSize) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        }
+      } else {
+        if (height > maxSize) {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Could not create canvas"));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Compression failed"));
+            return;
+          }
+
+          resolve(
+            new File([blob], "cover.jpg", {
+              type: "image/jpeg",
+            })
+          );
+        },
+        "image/jpeg",
+        0.75 // JPEG quality
+      );
+    };
+
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 function AddMusicForm() {
@@ -104,12 +140,16 @@ function AddMusicForm() {
 
     // Upload cover if provided
     if (coverFile) {
+      const compressedCover = await compressImage(coverFile);
+
       const safeName = title.replace(/[^a-zA-Z0-9_-]/g, "_");
       const storagePath = `cover_${safeName}.jpg`;
-      await supabase.storage.from("covers").upload(storagePath, coverFile, {
-        contentType: coverFile.type,
+
+      await supabase.storage.from("covers").upload(storagePath, compressedCover, {
+        contentType: "image/jpeg",
         upsert: true,
       });
+
       coverPath = storagePath;
     }
 
