@@ -9,7 +9,7 @@ name: Supabase keep-alive
 # In your GitHub repo: Settings → Secrets and variables → Actions → New
 # repository secret. Add these two secrets (same values as your .env):
 #   SUPABASE_URL       = https://your-project.supabase.co
-#   SUPABASE_ANON_KEY  = eyJ...your-anon-key
+#   SUPABASE_ANON_KEY  = eyJ...your-anon-key  
 # ────────────────────────────────────────────────────────────────────
 
 on:
