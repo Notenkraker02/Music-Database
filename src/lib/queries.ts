@@ -91,6 +91,70 @@ export async function fetchSongsByArtist(artist: string): Promise<Song[]> {
   return (data || []) as Song[];
 }
 
+// ── Most valuable ──────────────────────────────────────────
+
+/**
+ * Records with the highest price.
+ *
+ * NOTE: this exists because `fetchSongs({ sortField: "price_eur", sortDir:
+ * "desc" })` returns NULL-priced rows first — Postgres orders NULLs first on
+ * DESC by default — so a "top 10" ends up full of price-less records. Here we
+ * explicitly exclude missing/zero prices and put nulls last.
+ */
+export async function fetchMostValuable(limit = 10): Promise<Song[]> {
+  const { data, error } = await supabase
+    .from("songs")
+    .select("*")
+    .not("price_eur", "is", null)
+    .gt("price_eur", 0)
+    .order("price_eur", { ascending: false, nullsFirst: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data || []) as Song[];
+}
+
+// ── Missing-data records ───────────────────────────────────
+
+export type MissingField = "year" | "price" | "cover";
+
+export const MISSING_FIELD_LABELS: Record<MissingField, string> = {
+  year: "year",
+  price: "price",
+  cover: "cover",
+};
+
+/**
+ * Fetch all records that are missing a given field, so they can be found and
+ * completed easily. Paginated like fetchSongs.
+ */
+export async function fetchSongsMissing(
+  field: MissingField,
+  page = 1,
+  pageSize = 48
+): Promise<{ songs: Song[]; total: number }> {
+  let query = supabase.from("songs").select("*", { count: "exact" });
+
+  if (field === "year") {
+    query = query.is("year", null);
+  } else if (field === "price") {
+    // Missing means no price at all, or an explicit 0.
+    query = query.or("price_eur.is.null,price_eur.eq.0");
+  } else if (field === "cover") {
+    query = query.or("cover_path.is.null,cover_path.eq.");
+  }
+
+  const from = (page - 1) * pageSize;
+  query = query
+    .order("artist", { ascending: true })
+    .order("title", { ascending: true })
+    .range(from, from + pageSize - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { songs: (data || []) as Song[], total: count || 0 };
+}
+
 // ── Artists ────────────────────────────────────────────────
 
 export async function fetchArtists(search?: string) {

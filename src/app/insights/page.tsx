@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, Shuffle, AlertCircle } from "lucide-react";
+import { BarChart3, Shuffle, AlertCircle, ChevronRight } from "lucide-react";
 import { CoverImage } from "@/components/cover-image";
 import { PageSkeleton } from "@/components/loading";
-import { fetchSongs, fetchDecadeDistribution, fetchRandomSong, fetchStats, fetchArtists } from "@/lib/queries";
+import { fetchSongs, fetchDecadeDistribution, fetchRandomSong, fetchStats, fetchArtists, fetchMostValuable } from "@/lib/queries";
 import { formatPrice } from "@/lib/utils";
 import type { Song, CollectionStats, ArtistSummary } from "@/lib/types";
 import Link from "next/link";
@@ -15,7 +15,6 @@ export default function InsightsPage() {
   const [topArtists, setTopArtists] = useState<ArtistSummary[]>([]);
   const [mostValuable, setMostValuable] = useState<Song[]>([]);
   const [missingYear, setMissingYear] = useState(0);
-  const [missingGenre, setMissingGenre] = useState(0);
   const [missingPrice, setMissingPrice] = useState(0);
   const [randomSong, setRandomSong] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,18 +25,17 @@ export default function InsightsPage() {
         fetchStats(),
         fetchDecadeDistribution(),
         fetchArtists(),
-        fetchSongs({ sortField: "price_eur", sortDir: "desc", pageSize: 10 }),
+        fetchMostValuable(10),
       ]);
       setStats(s);
       setDecades(d);
       setTopArtists(artists.sort((a, b) => b.count - a.count).slice(0, 15));
-      setMostValuable(expensive.songs);
+      setMostValuable(expensive);
 
       // Count missing data
       const allRes = await fetchSongs({ pageSize: 5000 });
       const all = allRes.songs;
       setMissingYear(all.filter((s) => !s.year).length);
-      setMissingGenre(all.filter((s) => !s.genre).length);
       setMissingPrice(all.filter((s) => !s.price_eur || s.price_eur === 0).length);
 
       const r = await fetchRandomSong();
@@ -103,7 +101,10 @@ export default function InsightsPage() {
         <div className="card p-5">
           <h2 className="font-display font-bold text-white mb-4">Most valuable records</h2>
           <div className="space-y-1">
-            {mostValuable.filter((s) => s.price_eur && s.price_eur > 0).map((song, i) => (
+            {mostValuable.length === 0 && (
+              <p className="text-sm text-ink-500">No priced records yet.</p>
+            )}
+            {mostValuable.map((song, i) => (
               <Link
                 key={song.id}
                 href={`/music/${song.id}`}
@@ -124,25 +125,42 @@ export default function InsightsPage() {
           <h2 className="font-display font-bold text-white mb-4 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-amber-400" /> Missing data
           </h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-ink-400">Missing year</span>
-              <span className="text-sm text-white font-medium">{missingYear} records</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-ink-400">Missing genre</span>
-              <span className="text-sm text-white font-medium">{missingGenre} records</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-ink-400">Missing price</span>
-              <span className="text-sm text-white font-medium">{missingPrice} records</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-ink-400">Missing cover</span>
-              <span className="text-sm text-white font-medium">
-                {stats ? stats.total_songs - stats.with_covers : 0} records
+          <p className="text-xs text-ink-500 mb-3">
+            Click a row to see and complete those records.
+          </p>
+          <div className="space-y-2">
+            <Link
+              href="/missing/year"
+              className="flex items-center justify-between px-2 py-2 -mx-2 rounded hover:bg-ink-800/50 transition-colors group"
+            >
+              <span className="text-sm text-ink-400 group-hover:text-ink-200">Missing year</span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-sm text-white font-medium">{missingYear} records</span>
+                <ChevronRight className="w-4 h-4 text-ink-500 group-hover:text-groove" />
               </span>
-            </div>
+            </Link>
+            <Link
+              href="/missing/price"
+              className="flex items-center justify-between px-2 py-2 -mx-2 rounded hover:bg-ink-800/50 transition-colors group"
+            >
+              <span className="text-sm text-ink-400 group-hover:text-ink-200">Missing price</span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-sm text-white font-medium">{missingPrice} records</span>
+                <ChevronRight className="w-4 h-4 text-ink-500 group-hover:text-groove" />
+              </span>
+            </Link>
+            <Link
+              href="/missing/cover"
+              className="flex items-center justify-between px-2 py-2 -mx-2 rounded hover:bg-ink-800/50 transition-colors group"
+            >
+              <span className="text-sm text-ink-400 group-hover:text-ink-200">Missing cover</span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-sm text-white font-medium">
+                  {stats ? stats.total_songs - stats.with_covers : 0} records
+                </span>
+                <ChevronRight className="w-4 h-4 text-ink-500 group-hover:text-groove" />
+              </span>
+            </Link>
           </div>
         </div>
       </div>

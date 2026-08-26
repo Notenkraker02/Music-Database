@@ -62,6 +62,7 @@ export default function DashboardPage() {
           value={formatPrice(stats?.total_value ?? 0)}
           icon={Euro}
           accent="text-emerald-400"
+          blurUntilClick
         />
         <StatCard label="Total playtime" value={formatDuration(playtime)} icon={Clock} />
       </div>
