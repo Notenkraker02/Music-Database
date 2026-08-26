@@ -37,6 +37,12 @@ export default function MusicPage() {
     fetchDistinctValues("format").then((data) => setFormats(data as string[]));
   }, []);
 
+  // Apply a ?decade= filter passed in the URL (e.g. from the Insights page)
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("decade");
+    if (d) setDecade(d);
+  }, []);
+
   const loadSongs = useCallback(async () => {
     setLoading(true);
     const { songs: data, total: t } = await fetchSongs({

@@ -25,11 +25,11 @@ export default function InsightsPage() {
         fetchStats(),
         fetchDecadeDistribution(),
         fetchArtists(),
-        fetchMostValuable(10),
+        fetchMostValuable(100),
       ]);
       setStats(s);
       setDecades(d);
-      setTopArtists(artists.sort((a, b) => b.count - a.count).slice(0, 15));
+      setTopArtists(artists.sort((a, b) => b.count - a.count));
       setMostValuable(expensive);
 
       // Count missing data
@@ -57,50 +57,10 @@ export default function InsightsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Decade chart */}
-        <div className="card p-5">
-          <h2 className="font-display font-bold text-white mb-4">By decade</h2>
-          <div className="space-y-2">
-            {decades.map(({ decade, count }) => {
-              const max = Math.max(...decades.map((d) => d.count));
-              return (
-                <div key={decade} className="flex items-center gap-3">
-                  <span className="text-xs text-ink-400 w-12 text-right font-mono">{decade}</span>
-                  <div className="flex-1 h-5 bg-ink-800 rounded overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded transition-all"
-                      style={{ width: `${(count / max) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-ink-400 w-8 font-mono">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Top artists */}
-        <div className="card p-5">
-          <h2 className="font-display font-bold text-white mb-4">Most collected artists</h2>
-          <div className="space-y-1">
-            {topArtists.map((a, i) => (
-              <Link
-                key={a.artist}
-                href={`/artists/${encodeURIComponent(a.artist)}`}
-                className="flex items-center gap-3 px-2 py-1.5 rounded hover:bg-ink-800/50 transition-colors"
-              >
-                <span className="text-xs font-mono text-ink-500 w-5">{i + 1}</span>
-                <span className="text-ink-200 flex-1 truncate text-sm">{a.artist}</span>
-                <span className="text-xs font-medium text-groove">{a.count}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Most valuable */}
+        {/* Most valuable — moved above the decade chart; scrollable, sized to ~10 rows */}
         <div className="card p-5">
           <h2 className="font-display font-bold text-white mb-4">Most valuable records</h2>
-          <div className="space-y-1">
+          <div className="space-y-1 max-h-[352px] overflow-y-auto pr-1">
             {mostValuable.length === 0 && (
               <p className="text-sm text-ink-500">No priced records yet.</p>
             )}
@@ -120,6 +80,50 @@ export default function InsightsPage() {
           </div>
         </div>
 
+        {/* Top artists — scrollable, sized to ~10 rows */}
+        <div className="card p-5">
+          <h2 className="font-display font-bold text-white mb-4">Most collected artists</h2>
+          <div className="space-y-1 max-h-[352px] overflow-y-auto pr-1">
+            {topArtists.map((a, i) => (
+              <Link
+                key={a.artist}
+                href={`/artists/${encodeURIComponent(a.artist)}`}
+                className="flex items-center gap-3 px-2 py-1.5 rounded hover:bg-ink-800/50 transition-colors"
+              >
+                <span className="text-xs font-mono text-ink-500 w-5">{i + 1}</span>
+                <span className="text-ink-200 flex-1 truncate text-sm">{a.artist}</span>
+                <span className="text-xs font-medium text-groove">{a.count}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Decade chart — moved below; each bar links to that decade's records */}
+        <div className="card p-5">
+          <h2 className="font-display font-bold text-white mb-4">By decade</h2>
+          <div className="space-y-2">
+            {decades.map(({ decade, count }) => {
+              const max = Math.max(...decades.map((d) => d.count));
+              return (
+                <Link
+                  key={decade}
+                  href={`/music?decade=${parseInt(decade)}`}
+                  title={`See records from the ${decade}`}
+                  className="flex items-center gap-3 group"
+                >
+                  <span className="text-xs text-ink-400 w-12 text-right font-mono group-hover:text-groove transition-colors">{decade}</span>
+                  <div className="flex-1 h-5 bg-ink-800 rounded overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded transition-all group-hover:from-violet-400 group-hover:to-violet-300"
+                      style={{ width: `${(count / max) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-ink-400 w-8 font-mono">{count}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
         {/* Data quality */}
         <div className="card p-5">
           <h2 className="font-display font-bold text-white mb-4 flex items-center gap-2">
