@@ -9,64 +9,7 @@ import { useAdmin } from "@/lib/admin-context";
 import { FORMAT_OPTIONS } from "@/lib/types";
 import { autofillRankingsFromAnchors } from "@/lib/top4000-sync";
 import { Top4000Lookup } from "@/components/top4000-lookup";
-
-async function compressImage(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-
-      const maxSize = 800; // maximum width/height
-
-      let width = img.width;
-      let height = img.height;
-
-      if (width > height) {
-        if (width > maxSize) {
-          height = Math.round((height * maxSize) / width);
-          width = maxSize;
-        }
-      } else {
-        if (height > maxSize) {
-          width = Math.round((width * maxSize) / height);
-          height = maxSize;
-        }
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Could not create canvas"));
-        return;
-      }
-
-      ctx.drawImage(img, 0, 0, width, height);
-
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error("Compression failed"));
-            return;
-          }
-
-          resolve(
-            new File([blob], "cover.jpg", {
-              type: "image/jpeg",
-            })
-          );
-        },
-        "image/jpeg",
-        0.60 // JPEG quality
-      );
-    };
-
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
+import { compressImage, makeCoverPath } from "@/lib/image";
 
 function AddMusicForm() {
   const router = useRouter();
@@ -149,13 +92,12 @@ function AddMusicForm() {
 
     // Upload cover if provided
     if (coverFile) {
-      const compressedCover = await compressImage(coverFile);
+      const { file: compressed, contentType, ext } = await compressImage(coverFile);
 
-      const safeName = title.replace(/[^a-zA-Z0-9_-]/g, "_");
-      const storagePath = `cover_${safeName}.jpg`;
+      const storagePath = makeCoverPath(title, ext);
 
-      await supabase.storage.from("covers").upload(storagePath, compressedCover, {
-        contentType: "image/jpeg",
+      await supabase.storage.from("covers").upload(storagePath, compressed, {
+        contentType,
         upsert: true,
       });
 

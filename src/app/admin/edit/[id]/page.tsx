@@ -11,6 +11,7 @@ import type { Song } from "@/lib/types";
 import { PageSkeleton } from "@/components/loading";
 import { autofillRankingsFromAnchors } from "@/lib/top4000-sync";
 import { Top4000Lookup } from "@/components/top4000-lookup";
+import { compressImage, makeCoverPath } from "@/lib/image";
 
 async function autofillRankings(artist: string, title: string, rankings: any) {
   const { data } = await supabase
@@ -149,13 +150,13 @@ export default function EditMusicPage() {
     } else if (coverFile) {
       const oldCover = song.cover_path;
 
-      const safeName = title.replace(/[^a-zA-Z0-9_-]/g, "_");
-      const storagePath = `cover_${safeName}.jpg`;
+      const { file: compressed, contentType, ext } = await compressImage(coverFile);
+      const storagePath = makeCoverPath(title, ext);
 
       await supabase.storage
         .from("covers")
-        .upload(storagePath, coverFile, {
-          contentType: coverFile.type,
+        .upload(storagePath, compressed, {
+          contentType,
           upsert: true,
         });
 
