@@ -25,7 +25,7 @@ export default function InsightsPage() {
         fetchStats(),
         fetchDecadeDistribution(),
         fetchArtists(),
-        fetchMostValuable(1000),
+        fetchMostValuable(),
       ]);
       setStats(s);
       setDecades(d);
