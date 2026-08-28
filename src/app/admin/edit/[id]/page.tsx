@@ -10,6 +10,7 @@ import { FORMAT_OPTIONS } from "@/lib/types";
 import type { Song } from "@/lib/types";
 import { PageSkeleton } from "@/components/loading";
 import { autofillRankingsFromAnchors } from "@/lib/top4000-sync";
+import { Top4000Lookup } from "@/components/top4000-lookup";
 
 async function autofillRankings(artist: string, title: string, rankings: any) {
   const { data } = await supabase
@@ -112,6 +113,14 @@ export default function EditMusicPage() {
 
   if (loading) return <PageSkeleton />;
   if (!song) return <div className="text-center py-20 text-ink-400">Song not found</div>;
+
+  const handlePickPosition = (yr: number, position: number) => {
+    const v = String(position);
+    if (yr === 2023) setTop2023(v);
+    else if (yr === 2024) setTop2024(v);
+    else if (yr === 2025) setTop2025(v);
+    else if (yr === 2026) setTop2026(v);
+  };
 
   const parseTopVal = (val: string): number | null => {
     const n = parseInt(val);
@@ -262,6 +271,8 @@ export default function EditMusicPage() {
             <div><label className="block text-xs text-ink-500 mb-1">2025</label><input value={top2025} onChange={(e) => setTop2025(e.target.value)} className="input-field" /></div>
             <div><label className="block text-xs text-ink-500 mb-1">2026</label><input value={top2026} onChange={(e) => setTop2026(e.target.value)} className="input-field" /></div>
           </div>
+
+          <Top4000Lookup defaultQuery={artist} onPick={handlePickPosition} />
         </div>
 
         <div>

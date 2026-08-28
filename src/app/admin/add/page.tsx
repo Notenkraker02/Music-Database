@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useAdmin } from "@/lib/admin-context";
 import { FORMAT_OPTIONS } from "@/lib/types";
 import { autofillRankingsFromAnchors } from "@/lib/top4000-sync";
+import { Top4000Lookup } from "@/components/top4000-lookup";
 
 async function compressImage(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
@@ -119,6 +120,14 @@ function AddMusicForm() {
       </div>
     );
   }
+
+  const handlePickPosition = (yr: number, position: number) => {
+    const v = String(position);
+    if (yr === 2023) setTop2023(v);
+    else if (yr === 2024) setTop2024(v);
+    else if (yr === 2025) setTop2025(v);
+    else if (yr === 2026) setTop2026(v);
+  };
 
   const parseTopVal = (val: string): number | null => {
     const n = parseInt(val);
@@ -279,6 +288,8 @@ function AddMusicForm() {
               <input value={top2026} onChange={(e) => setTop2026(e.target.value)} className="input-field" placeholder="—" />
             </div>
           </div>
+
+          <Top4000Lookup defaultQuery={artist} onPick={handlePickPosition} />
         </div>
 
         {/* Tracklist + Description */}
